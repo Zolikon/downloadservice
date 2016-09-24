@@ -1,0 +1,6 @@
+host: localhost
+urlDatabase: test
+urlCollection: test
+
+seriesDatabase: test
+seriesCollection: series
