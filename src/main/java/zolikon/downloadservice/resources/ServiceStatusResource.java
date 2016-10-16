@@ -2,8 +2,13 @@ package zolikon.downloadservice.resources;
 
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.inject.Inject;
-import zolikon.downloadservice.service.ServiceRegistry;
+import zolikon.downloadservice.dao.SeriesDao;
+import zolikon.downloadservice.service.SeriesService;
+import zolikon.downloadservice.service.ServiceStatus;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
@@ -15,16 +20,25 @@ import javax.ws.rs.core.MediaType;
 public class ServiceStatusResource {
 
 
-    private ServiceRegistry registry;
+    private SeriesService seriesService;
+    private SeriesDao seriesDao;
+    private ObjectMapper mapper;
 
     @Inject
-    public ServiceStatusResource(ServiceRegistry registry) {
-        this.registry = registry;
+    public ServiceStatusResource(SeriesService servicePool, SeriesDao seriesDao, ObjectMapper mapper) {
+        this.seriesService = servicePool;
+        this.seriesDao = seriesDao;
+        this.mapper = mapper;
     }
 
     @GET
     public JsonNode getStatus() {
-        return registry.getStatus();
+        ServiceStatus serviceStatus = seriesService.getStatus();
+        ArrayNode seriesArray = mapper.createArrayNode();
+        ObjectNode result = mapper.createObjectNode();
+        result.set("service",mapper.convertValue(serviceStatus,JsonNode.class));
+        result.set("series",seriesArray);
+        return result;
     }
 
 }
