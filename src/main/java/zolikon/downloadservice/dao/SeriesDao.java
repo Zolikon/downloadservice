@@ -55,12 +55,12 @@ public class SeriesDao {
         return result;
     }
 
-    public void updateSeries(Series series){
+    public void update(Series series){
         Document doc = convert((Series) series);
         collection.replaceOne(Filters.eq("_id",series.getName()),doc);
     }
 
-    public void addSeries(Series series){
+    public void save(Series series){
         collection.insertOne(convert(series));
     }
 

@@ -3,21 +3,20 @@ package zolikon.downloadservice;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.Version;
 import com.fasterxml.jackson.databind.*;
 import com.fasterxml.jackson.databind.module.SimpleModule;
-import com.fasterxml.jackson.dataformat.yaml.snakeyaml.serializer.Serializer;
-import com.google.inject.*;
+import com.google.inject.Binder;
 import com.google.inject.Module;
+import com.google.inject.Provides;
+import com.google.inject.Singleton;
 import com.google.inject.name.Named;
 import com.mongodb.MongoClient;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
-import zolikon.downloadservice.configuration.MongoConfiguration;
 import org.bson.Document;
 import org.yaml.snakeyaml.Yaml;
+import zolikon.downloadservice.configuration.MongoConfiguration;
 import zolikon.downloadservice.configuration.SeriesConfiguration;
-import zolikon.downloadservice.service.ServiceRegistry;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -25,6 +24,7 @@ import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 
 
 public class InjectorModule implements Module {
@@ -45,7 +45,7 @@ public class InjectorModule implements Module {
         customModule.addSerializer(LocalDate.class, new JsonSerializer<LocalDate>() {
             @Override
             public void serialize(LocalDate value, JsonGenerator gen, SerializerProvider serializers) throws IOException, JsonProcessingException {
-                gen.writeString(value.toString());
+                gen.writeString(value.format(DateTimeFormatter.BASIC_ISO_DATE));
             }
         });
         customModule.addDeserializer(LocalDate.class, new JsonDeserializer<LocalDate>() {
@@ -75,12 +75,6 @@ public class InjectorModule implements Module {
     public MongoCollection<Document> getSeriesCollection(MongoClient client,MongoConfiguration mongoConfiguration){
         MongoDatabase database = client.getDatabase(mongoConfiguration.getSeriesDatabase());
         return database.getCollection(mongoConfiguration.getSeriesCollection());
-    }
-
-    @Provides
-    @Singleton
-    public ServiceRegistry getRegistry(){
-        return new ServiceRegistry(Guice.createInjector(this));
     }
 
     @Provides

@@ -9,7 +9,6 @@ import zolikon.downloadservice.dao.SeriesDao;
 import zolikon.downloadservice.model.Episode;
 import zolikon.downloadservice.model.Series;
 import zolikon.downloadservice.model.SeriesApiInformation;
-import zolikon.downloadservice.service.ServiceRegistry;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.POST;
@@ -24,21 +23,21 @@ import java.util.Optional;
 @Consumes(MediaType.APPLICATION_JSON)
 public class AddSeriesResource {
 
-    private ServiceRegistry registry;
+
     private ObjectMapper mapper;
     private SeriesDao seriesDao;
     private SeriesInformationClient seriesInformationClient;
 
     @Inject
-    public AddSeriesResource(ServiceRegistry registry, ObjectMapper mapper, SeriesDao seriesDao, SeriesInformationClient seriesInformationClient) {
-        this.registry = registry;
+    public AddSeriesResource(ObjectMapper mapper, SeriesDao seriesDao, SeriesInformationClient seriesInformationClient) {
+
         this.mapper = mapper;
         this.seriesDao = seriesDao;
         this.seriesInformationClient = seriesInformationClient;
     }
 
     @POST
-    public Response addService(Series newSeries){
+    public Response addSeries(Series newSeries){
         if(newSeries.getName()==null){
             return createResponse(ResponseStatus.MISSING_NAME);
         }
@@ -51,11 +50,10 @@ public class AddSeriesResource {
             newSeries.setLastEpisode(new Episode(0,0));
         }
         try {
-            seriesDao.addSeries(newSeries);
+            seriesDao.save(newSeries);
         } catch (MongoWriteException exc){
             return createResponse(ResponseStatus.DUPLICATED_NAME);
         }
-        registry.add(newSeries);
         return createResponse(ResponseStatus.OK);
     }
 

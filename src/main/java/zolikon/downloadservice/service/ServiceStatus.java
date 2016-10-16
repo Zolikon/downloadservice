@@ -3,38 +3,58 @@ package zolikon.downloadservice.service;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import zolikon.downloadservice.model.Episode;
+
+import java.time.LocalTime;
 
 @JsonInclude(Include.NON_NULL)
+@SuppressWarnings("unused")
 public class ServiceStatus {
 
-    private String name;
-    private Episode lastEpisode;
-    private Episode nextEpisode;
+    private String id;
+    private long delayInSeconds;
+    private long rateInSeconds;
+    private String lastRun;
+    private int iterationCount=0;
     private boolean isServiceRunning;
 
-    public String getName() {
-        return name;
+    ServiceStatus(String id, long delay, long rate) {
+        this.id = id;
+        this.delayInSeconds = delay;
+        this.rateInSeconds = rate;
     }
 
-    public void setName(String name) {
-        this.name = name;
+    void addIteration(LocalTime time){
+        lastRun = time.toString();
+        iterationCount++;
     }
 
-    public Episode getLastEpisode() {
-        return lastEpisode;
+    ServiceStatus snapshot(boolean isServiceRunning){
+        this.isServiceRunning = isServiceRunning;
+        return this;
     }
 
-    public void setLastEpisode(Episode lastEpisode) {
-        this.lastEpisode = lastEpisode;
+    public long getDelayInSeconds() {
+        return delayInSeconds;
     }
 
-    public Episode getNextEpisode() {
-        return nextEpisode;
+    public void setDelayInSeconds(long delayInSeconds) {
+        this.delayInSeconds = delayInSeconds;
     }
 
-    public void setNextEpisode(Episode nextEpisode) {
-        this.nextEpisode = nextEpisode;
+    public long getRateInSeconds() {
+        return rateInSeconds;
+    }
+
+    public void setRateInSeconds(long rateInSeconds) {
+        this.rateInSeconds = rateInSeconds;
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
     }
 
     public boolean isServiceRunning() {
@@ -43,5 +63,21 @@ public class ServiceStatus {
 
     public void setServiceRunning(boolean serviceRunning) {
         isServiceRunning = serviceRunning;
+    }
+
+    public String getLastRun() {
+        return lastRun;
+    }
+
+    public void setLastRun(String lastRun) {
+        this.lastRun = lastRun;
+    }
+
+    public int getIterationCount() {
+        return iterationCount;
+    }
+
+    public void setIterationCount(int iterationCount) {
+        this.iterationCount = iterationCount;
     }
 }
