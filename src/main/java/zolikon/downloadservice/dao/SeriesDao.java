@@ -56,7 +56,7 @@ public class SeriesDao {
     }
 
     public void update(Series series){
-        Document doc = convert((Series) series);
+        Document doc = convert(series);
         collection.replaceOne(Filters.eq("_id",series.getName()),doc);
     }
 

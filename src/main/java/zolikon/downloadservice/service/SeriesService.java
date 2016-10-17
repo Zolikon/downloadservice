@@ -2,9 +2,11 @@ package zolikon.downloadservice.service;
 
 
 import com.google.common.util.concurrent.AbstractScheduledService;
+import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import jpa.Torrent;
+import zolikon.downloadservice.InjectorModule;
 import zolikon.downloadservice.clients.PiratebaySearchClient;
 import zolikon.downloadservice.clients.SeriesInformationClient;
 import zolikon.downloadservice.configuration.SeriesConfiguration;
@@ -26,7 +28,7 @@ public class SeriesService extends AbstractScheduledService {
 
     private final Scheduler scheduler;
     private SeriesDao seriesDao;
-    private String id = randomUUID().toString().substring(0,5);
+    private String id = randomUUID().toString().substring(0, 5);
     private ServiceStatus status;
 
     private final UrlWriter urlWriter;
@@ -45,9 +47,9 @@ public class SeriesService extends AbstractScheduledService {
 
         long rate = seriesConfiguration.getServicesIterationRateInSeconds();
         long delay = seriesConfiguration.getServiceStartDelayInSeconds();
-        System.out.printf("service %s created, delay: %d, rate:%d\n", id,delay, rate);
+        System.out.printf("service %s created, delay: %d, rate:%d\n", id, delay, rate);
         this.scheduler = Scheduler.newFixedRateSchedule(delay, rate, TimeUnit.SECONDS);
-        status = new ServiceStatus(id,delay,rate);
+        status = new ServiceStatus(id, delay, rate);
     }
 
 
@@ -58,24 +60,25 @@ public class SeriesService extends AbstractScheduledService {
     @Override
     protected void runOneIteration() throws Exception {
         List<Series> seriesList = seriesDao.getSeries();
-        for(Series series : seriesList){
+        for (Series series : seriesList) {
             Optional<Episode> optionalEpisode = getNextEpisode(series);
-            if (!optionalEpisode.isPresent()) {
-                return;
-            }
-            Episode nextEpisode = optionalEpisode.get();
-            series.setNextEpisode(nextEpisode);
-            System.out.println(String.format("next episode %s", series.createSearchStringForNextEpisode()));
-
-            LocalDate airdate = nextEpisode.getAirdate();
-            LocalDate now = LocalDate.now();
-            if (now.isAfter(airdate)) {
-                searchForUrl(series);
+            if (optionalEpisode.isPresent()) {
+                Episode nextEpisode = optionalEpisode.get();
+                series.setNextEpisode(nextEpisode);
+                System.out.println(String.format("next episode %s", series.createSearchStringForNextEpisode()));
+                LocalDate airDate = nextEpisode.getAirdate();
+                LocalDate now = LocalDate.now();
+                if (now.isAfter(airDate)) {
+                    searchForUrl(series);
+                } else {
+                    System.out.printf("next airdate is %d days away%n", now.until(airDate).getDays());
+                }
+                seriesDao.update(series);
             } else {
-                System.out.printf("next airdate is %d days away\n", now.until(airdate).getDays());
+                System.out.printf("no next episode for %s%n", series.getName());
             }
-            seriesDao.update(series);
         }
+
         status.addIteration(LocalTime.now());
     }
 
@@ -101,9 +104,9 @@ public class SeriesService extends AbstractScheduledService {
         return optionalEpisode;
     }
 
-
     @Override
     protected Scheduler scheduler() {
         return scheduler;
     }
+
 }

@@ -5,33 +5,28 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
-import zolikon.downloadservice.model.Episode;
-import zolikon.downloadservice.model.Series;
-import org.apache.http.HttpEntity;
-import org.apache.http.HttpHost;
-import org.apache.http.HttpRequest;
-import org.apache.http.HttpResponse;
+import org.apache.http.*;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.util.EntityUtils;
+import zolikon.downloadservice.model.Episode;
+import zolikon.downloadservice.model.Series;
 import zolikon.downloadservice.model.SeriesApiInformation;
 
+import javax.ws.rs.core.Request;
+import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.util.Optional;
 
 @Singleton
 public class SeriesInformationClient {
 
-    public static final int OK_STATUS = 200;
-
-    private final HttpClient client;
     private final HttpHost httpHost;
     private final ObjectMapper mapper;
 
     @Inject
     public SeriesInformationClient(ObjectMapper mapper){
-        client = HttpClientBuilder.create().build();
         httpHost = HttpHost.create("http://api.tvmaze.com");
         this.mapper = mapper;
     }
@@ -61,9 +56,10 @@ public class SeriesInformationClient {
 
     private JsonNode callEndpoint(HttpRequest request){
         try {
+            HttpClient client = HttpClientBuilder.create().build();
             HttpResponse response = client.execute(httpHost,request);
             JsonNode result;
-            if(response.getStatusLine().getStatusCode()== OK_STATUS){
+            if(response.getStatusLine().getStatusCode()== HttpStatus.SC_OK){
                 HttpEntity httpEntity = response.getEntity();
                 result = mapper.readTree(EntityUtils.toString(httpEntity));
             } else {
