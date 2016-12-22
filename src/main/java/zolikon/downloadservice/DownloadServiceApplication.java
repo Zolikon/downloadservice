@@ -5,7 +5,7 @@ import com.google.inject.Injector;
 import io.dropwizard.Application;
 import io.dropwizard.setup.Environment;
 import zolikon.downloadservice.configuration.ApplicationConfiguration;
-import zolikon.downloadservice.resources.AddSeriesResource;
+import zolikon.downloadservice.resources.SeriesResource;
 import zolikon.downloadservice.resources.ServiceStatusResource;
 import zolikon.downloadservice.service.SeriesService;
 
@@ -22,7 +22,7 @@ public class DownloadServiceApplication extends Application<ApplicationConfigura
     @Override
     public void run(ApplicationConfiguration configuration, Environment environment) throws Exception {
         final ServiceStatusResource serviceStatusResource = injector.getInstance(ServiceStatusResource.class);
-        final AddSeriesResource addSeriesResource = injector.getInstance(AddSeriesResource.class);
+        final SeriesResource addSeriesResource = injector.getInstance(SeriesResource.class);
         environment.jersey().register(serviceStatusResource);
         environment.jersey().register(addSeriesResource);
         SeriesService seriesService = injector.getInstance(SeriesService.class);

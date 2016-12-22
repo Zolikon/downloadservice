@@ -10,18 +10,21 @@ import zolikon.downloadservice.model.Episode;
 import zolikon.downloadservice.model.Series;
 import zolikon.downloadservice.model.SeriesApiInformation;
 
-import javax.ws.rs.Consumes;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
+import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
-@Path("/addSeries")
+import static zolikon.downloadservice.resources.ResponseStatus.MISSING_NAME;
+import static zolikon.downloadservice.resources.ResponseStatus.OK;
+
+
+@Path("/series")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
-public class AddSeriesResource {
+public class SeriesResource {
 
 
     private ObjectMapper mapper;
@@ -29,55 +32,46 @@ public class AddSeriesResource {
     private SeriesInformationClient seriesInformationClient;
 
     @Inject
-    public AddSeriesResource(ObjectMapper mapper, SeriesDao seriesDao, SeriesInformationClient seriesInformationClient) {
-
+    public SeriesResource(ObjectMapper mapper, SeriesDao seriesDao, SeriesInformationClient seriesInformationClient) {
         this.mapper = mapper;
         this.seriesDao = seriesDao;
         this.seriesInformationClient = seriesInformationClient;
     }
 
+
     @POST
-    public Response addSeries(Series newSeries){
-        if(newSeries.getName()==null){
-            return createResponse(ResponseStatus.MISSING_NAME);
+    public Response addSeries(Series newSeries) {
+        if (newSeries.getName() == null) {
+            return createResponse(MISSING_NAME);
         }
         Optional<SeriesApiInformation> seriesApiInformationOptional = seriesInformationClient.getSeriesInfo(newSeries);
-        if(!seriesApiInformationOptional.isPresent()){
-            return createResponse(ResponseStatus.UNKOWN_NAME);
+        if (!seriesApiInformationOptional.isPresent()) {
+            return createResponse(ResponseStatus.UNKNOWN_NAME);
         }
         newSeries.update(seriesApiInformationOptional.get());
-        if(newSeries.getLastEpisode()==null){
-            newSeries.setLastEpisode(new Episode(0,0));
+        if (newSeries.getLastEpisode() == null) {
+            newSeries.setLastEpisode(new Episode(0, 0));
         }
         try {
             seriesDao.save(newSeries);
-        } catch (MongoWriteException exc){
+        } catch (MongoWriteException exc) {
             return createResponse(ResponseStatus.DUPLICATED_NAME);
         }
-        return createResponse(ResponseStatus.OK);
+        return createResponse(OK);
     }
 
-    private Response createResponse(ResponseStatus response){
+    @GET
+    public Response getSeries(@QueryParam("name") @DefaultValue("") String name) {
+        String lowercaseName = name.toLowerCase();
+        List<Series> seriesList = seriesDao.getSeries().stream().filter(series -> series.getName().toLowerCase().contains(lowercaseName)).collect(Collectors.toList());
+        return Response.status(OK.getStatus()).entity(seriesList).build();
+    }
+
+    private Response createResponse(ResponseStatus response) {
         ObjectNode node = mapper.createObjectNode();
-        node.put("status",response.name());
+        node.put("status", response.name());
         return Response.status(response.getStatus()).entity(node).build();
     }
 
-    private enum ResponseStatus{
-        OK(200),
-        MISSING_NAME(400),
-        UNKOWN_NAME(400),
-        DUPLICATED_NAME(400);
-
-        private int status;
-
-        ResponseStatus(int status) {
-            this.status = status;
-        }
-
-        public int getStatus() {
-            return status;
-        }
-    }
 
 }

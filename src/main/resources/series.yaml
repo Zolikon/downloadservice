@@ -1,3 +1,3 @@
 seriesSaveFolder: "f:/Sorozat/"
-servicesIterationRateInSeconds: 30
+servicesIterationRateInSeconds: 3000
 serviceStartDelayInSeconds: 10

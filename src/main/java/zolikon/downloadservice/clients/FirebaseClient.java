@@ -72,14 +72,4 @@ public class FirebaseClient {
     }
 
 
-    public static void main(String[] args) throws Exception{
-        FirebaseClient firebaseClient = new FirebaseClient();
-        //System.out.println(firebaseClient.getMoviesToDownload());
-        firebaseClient.emptyMovies();
-    }
-
-
-
-
-
 }

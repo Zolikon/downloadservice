@@ -10,6 +10,8 @@ import com.google.inject.name.Named;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoIterable;
 import com.mongodb.client.model.Filters;
+import com.mongodb.client.model.TextSearchOptions;
+import org.bson.BsonDocument;
 import zolikon.downloadservice.InjectorModule;
 import zolikon.downloadservice.clients.PiratebaySearchClient;
 import zolikon.downloadservice.clients.SeriesInformationClient;
@@ -27,6 +29,7 @@ import static zolikon.downloadservice.InjectorModule.SERIES_COLLECTION;
 @Singleton
 public class SeriesDao {
 
+    public static final String ID = "_id";
     private ObjectMapper mapper;
     private MongoCollection<Document> collection;
 
@@ -36,53 +39,53 @@ public class SeriesDao {
         this.collection = collection;
     }
 
-    public List<Series> getSeries(){
+    public List<Series> getSeries() {
         List<Series> result = new ArrayList<>();
         MongoIterable<Document> iterable = collection.find();
-        for(Document doc:iterable){
+        for (Document doc : iterable) {
             Series series = convert(doc);
             result.add(series);
         }
-        return  result;
+        return result;
     }
 
-    public Optional<Series> getSeries(String name){
+    public Optional<Series> getSeries(String name) {
         Optional<Series> result = Optional.empty();
-        Document doc = collection.find(Filters.eq("_id", name)).first();
-        if(doc!=null){
+        Document doc = collection.find(Filters.eq(ID, name)).first();
+        if (doc != null) {
             result = Optional.of(convert(doc));
         }
         return result;
     }
 
-    public void update(Series series){
+    public void update(Series series) {
         Document doc = convert(series);
-        collection.replaceOne(Filters.eq("_id",series.getName()),doc);
+        collection.replaceOne(Filters.eq(ID, series.getName()), doc);
     }
 
-    public void save(Series series){
+    public void save(Series series) {
         collection.insertOne(convert(series));
     }
 
     private Series convert(Document doc) {
-        Series series = mapper.convertValue(doc,Series.class);
-        series.setName(doc.get("_id").toString());
+        Series series = mapper.convertValue(doc, Series.class);
+        series.setName(doc.get(ID).toString());
         return series;
     }
 
     private Document convert(Series series) {
-        Document doc = new Document("_id",series.getName()).append("apiId",series.getApiId());
-        doc.append("lastEpisode",convert(series.getLastEpisode()));
-        if(series.getNextEpisode()!=null){
-            doc.append("nextEpisode",convert(series.getNextEpisode()));
+        Document doc = new Document(ID, series.getName()).append("apiId", series.getApiId());
+        doc.append("lastEpisode", convert(series.getLastEpisode()));
+        if (series.getNextEpisode() != null) {
+            doc.append("nextEpisode", convert(series.getNextEpisode()));
         }
         return doc;
     }
 
     private Document convert(Episode episode) {
-        Document doc =  new Document("season",episode.getSeason()).append("number",episode.getNumber());
-        if(episode.getAirdate()!=null){
-            doc.append("airdate",episode.getAirdate().toString());
+        Document doc = new Document("season", episode.getSeason()).append("number", episode.getNumber());
+        if (episode.getAirdate() != null) {
+            doc.append("airdate", episode.getAirdate().toString());
         }
         return doc;
     }
