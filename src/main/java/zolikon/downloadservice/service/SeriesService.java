@@ -12,17 +12,22 @@ import zolikon.downloadservice.clients.SeriesInformationClient;
 import zolikon.downloadservice.configuration.SeriesConfiguration;
 import zolikon.downloadservice.dao.SeriesDao;
 import zolikon.downloadservice.dao.UrlWriter;
-import zolikon.downloadservice.model.AdditionalInformation;
-import zolikon.downloadservice.model.Episode;
-import zolikon.downloadservice.model.Series;
+import zolikon.downloadservice.model.*;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.Period;
+import java.time.temporal.ChronoUnit;
+import java.time.temporal.TemporalUnit;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
+import static java.time.temporal.ChronoUnit.DAYS;
 import static java.util.UUID.randomUUID;
+import static zolikon.downloadservice.model.ReportColouring.BLUE;
+import static zolikon.downloadservice.model.ReportColouring.GREEN;
+import static zolikon.downloadservice.model.ReportColouring.RED;
 
 public class SeriesService extends AbstractScheduledService {
 
@@ -38,7 +43,6 @@ public class SeriesService extends AbstractScheduledService {
 
     @Inject
     public SeriesService(Injector injector) {
-        super();
         this.seriesDao = injector.getInstance(SeriesDao.class);
         this.urlWriter = injector.getInstance(UrlWriter.class);
         this.piratebaySearchClient = injector.getInstance(PiratebaySearchClient.class);
@@ -62,21 +66,24 @@ public class SeriesService extends AbstractScheduledService {
         List<Series> seriesList = seriesDao.getSeries();
         for (Series series : seriesList) {
             Optional<Episode> optionalEpisode = getNextEpisode(series);
+            SeriesReport report = new SeriesReport(series.getName());
             if (optionalEpisode.isPresent()) {
                 Episode nextEpisode = optionalEpisode.get();
                 series.setNextEpisode(nextEpisode);
-                System.out.println(String.format("next episode %s", series.createSearchStringForNextEpisode()));
+
+                report.addReport(BLUE,"next episode %s", series.createSearchStringForNextEpisode());
                 LocalDate airDate = nextEpisode.getAirdate();
                 LocalDate now = LocalDate.now();
                 if (now.isAfter(airDate)) {
                     searchForUrl(series);
                 } else {
-                    System.out.printf("next airdate is %d days away%n", now.until(airDate).getDays());
+                    report.addReport(GREEN,"next airdate is %d days away", DAYS.between(now,airDate));
                 }
                 seriesDao.update(series);
             } else {
-                System.out.printf("no next episode for %s%n", series.getName());
+                report.addReport(RED,"no next episode for %s", series.getName());
             }
+            System.out.print(report);
         }
 
         status.addIteration(LocalTime.now());
