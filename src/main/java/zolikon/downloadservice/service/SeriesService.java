@@ -1,35 +1,37 @@
 package zolikon.downloadservice.service;
 
 
+import com.google.common.base.Joiner;
 import com.google.common.util.concurrent.AbstractScheduledService;
-import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import jpa.Torrent;
-import zolikon.downloadservice.InjectorModule;
+import org.apache.log4j.Logger;
 import zolikon.downloadservice.clients.PiratebaySearchClient;
 import zolikon.downloadservice.clients.SeriesInformationClient;
 import zolikon.downloadservice.configuration.SeriesConfiguration;
 import zolikon.downloadservice.dao.SeriesDao;
 import zolikon.downloadservice.dao.UrlWriter;
-import zolikon.downloadservice.model.*;
+import zolikon.downloadservice.model.AdditionalInformation;
+import zolikon.downloadservice.model.Episode;
+import zolikon.downloadservice.model.Series;
+import zolikon.downloadservice.model.SeriesReport;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.time.Period;
-import java.time.temporal.ChronoUnit;
-import java.time.temporal.TemporalUnit;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import static java.time.temporal.ChronoUnit.DAYS;
 import static java.util.UUID.randomUUID;
-import static zolikon.downloadservice.model.ReportColouring.BLUE;
-import static zolikon.downloadservice.model.ReportColouring.GREEN;
-import static zolikon.downloadservice.model.ReportColouring.RED;
+import static zolikon.downloadservice.model.ReportColouring.*;
 
 public class SeriesService extends AbstractScheduledService {
+
+    private static final Logger LOG = Logger.getLogger(SeriesService.class);
 
     private final Scheduler scheduler;
     private SeriesDao seriesDao;
@@ -64,6 +66,7 @@ public class SeriesService extends AbstractScheduledService {
     @Override
     protected void runOneIteration() throws Exception {
         List<Series> seriesList = seriesDao.getSeries();
+        LOG.info(String.format("Iteration started at %s", LocalDateTime.now().toString()));
         for (Series series : seriesList) {
             Optional<Episode> optionalEpisode = getNextEpisode(series);
             SeriesReport report = new SeriesReport(series.getName());
@@ -83,10 +86,21 @@ public class SeriesService extends AbstractScheduledService {
             } else {
                 report.addReport(RED,"no next episode for %s", series.getName());
             }
-            System.out.print(report);
         }
-
         status.addIteration(LocalTime.now());
+        List<String> seriesNames = seriesList.stream().map(series -> series.getName()).collect(Collectors.toList());
+        LOG.info(String.format("Run comlepete, included in iteration: %s", Joiner.on(", ").join(seriesNames)));
+    }
+
+    @Override
+    protected Scheduler scheduler() {
+        return scheduler;
+    }
+
+    @Override
+    protected void shutDown() throws Exception {
+        LOG.error("Something went wrong, scheduling shutting down");
+        super.shutDown();
     }
 
     private void searchForUrl(Series series) {
@@ -95,10 +109,10 @@ public class SeriesService extends AbstractScheduledService {
             Torrent torrent = torrentOptional.get();
             AdditionalInformation additionalInformation = new AdditionalInformation(seriesConfiguration.getSeriesSaveFolder() + series.createSavePathForNextEpisode(), true);
             urlWriter.saveTorrent(torrent, additionalInformation);
-            System.out.println(String.format("saving url for episode %s", series.createSearchStringForNextEpisode()));
+            LOG.info(String.format("saving url for episode %s", series.createSearchStringForNextEpisode()));
             series.saveSuccessful();
         } else {
-            System.out.println(String.format("no url found for episode %s", series.createSearchStringForNextEpisode()));
+            LOG.warn(String.format("no url found for episode %s", series.createSearchStringForNextEpisode()));
         }
     }
 
@@ -109,11 +123,6 @@ public class SeriesService extends AbstractScheduledService {
             optionalEpisode = seriesInformationClient.getEpisodeInfo(series.getApiId(), series.nextSeason());
         }
         return optionalEpisode;
-    }
-
-    @Override
-    protected Scheduler scheduler() {
-        return scheduler;
     }
 
 }

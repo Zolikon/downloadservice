@@ -38,9 +38,9 @@ public class InjectorModule implements Module {
     }
 
     @Provides
-    public ObjectMapper createObjectMapper(){
+    public ObjectMapper createObjectMapper() {
         ObjectMapper objectMapper = new ObjectMapper();
-        objectMapper.configure(SerializationFeature.INDENT_OUTPUT,true);
+        objectMapper.configure(SerializationFeature.INDENT_OUTPUT, true);
         SimpleModule customModule = new SimpleModule("customModule");
         customModule.addSerializer(LocalDate.class, new JsonSerializer<LocalDate>() {
             @Override
@@ -51,7 +51,13 @@ public class InjectorModule implements Module {
         customModule.addDeserializer(LocalDate.class, new JsonDeserializer<LocalDate>() {
             @Override
             public LocalDate deserialize(JsonParser p, DeserializationContext ctxt) throws IOException, JsonProcessingException {
-                return LocalDate.parse(p.getText());
+                LocalDate result;
+                try {
+                    result = LocalDate.parse(p.getText());
+                } catch (Exception exc) {
+                    result = null;
+                }
+                return result;
             }
         });
         objectMapper.registerModule(customModule);
@@ -60,43 +66,46 @@ public class InjectorModule implements Module {
 
 
     @Provides
-    public MongoClient createClient(MongoConfiguration mongoConfiguration){
+    public MongoClient createClient(MongoConfiguration mongoConfiguration) {
         return new MongoClient(mongoConfiguration.getHost());
     }
 
     @Provides
+    @Singleton
     @Named(URL_COLLECTION)
-    public MongoCollection<Document> getTorrentCollection(MongoClient client,MongoConfiguration mongoConfiguration){
+    public MongoCollection<Document> getTorrentCollection(MongoClient client, MongoConfiguration mongoConfiguration) {
         MongoDatabase database = client.getDatabase(mongoConfiguration.getUrlDatabase());
         return database.getCollection(mongoConfiguration.getUrlCollection());
     }
+
     @Provides
+    @Singleton
     @Named(SERIES_COLLECTION)
-    public MongoCollection<Document> getSeriesCollection(MongoClient client,MongoConfiguration mongoConfiguration){
+    public MongoCollection<Document> getSeriesCollection(MongoClient client, MongoConfiguration mongoConfiguration) {
         MongoDatabase database = client.getDatabase(mongoConfiguration.getSeriesDatabase());
         return database.getCollection(mongoConfiguration.getSeriesCollection());
     }
 
     @Provides
     @Singleton
-    public MongoConfiguration getMongoConfiguration(){
+    public MongoConfiguration getMongoConfiguration() {
         return getConfiguration(MongoConfiguration.class);
     }
 
     @Provides
     @Singleton
-    public SeriesConfiguration getSeriesConfiguration(){
+    public SeriesConfiguration getSeriesConfiguration() {
         return getConfiguration(SeriesConfiguration.class);
     }
 
 
-    private <T>T getConfiguration(Class<T> clazz){
+    private <T> T getConfiguration(Class<T> clazz) {
         Yaml yaml = new Yaml();
-        String name = clazz.getSimpleName().replace("Configuration","").toLowerCase()+".yaml";
+        String name = clazz.getSimpleName().replace("Configuration", "").toLowerCase() + ".yaml";
         T result = null;
         try {
-            try( InputStream in = Files.newInputStream( Paths.get(ClassLoader.getSystemResource(name).toURI()))  ) {
-                result = yaml.loadAs( in, clazz );
+            try (InputStream in = Files.newInputStream(Paths.get(ClassLoader.getSystemResource(name).toURI()))) {
+                result = yaml.loadAs(in, clazz);
             }
         } catch (IOException e) {
             e.printStackTrace();

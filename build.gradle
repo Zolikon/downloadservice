@@ -22,12 +22,14 @@ buildscript {
         classpath 'com.github.rholder:gradle-one-jar:1.0.3'
     }
 }
+
 dependencies {
     compile group: 'io.dropwizard', name: 'dropwizard-core', version: '1.0.1'
     compile group: 'org.mongodb', name: 'mongo-java-driver', version: '3.3.0'
     compile group: 'org.apache.httpcomponents', name: 'httpclient', version: '4.5.2'
     compile group: 'com.google.inject', name: 'guice', version: '4.1.0'
     compile group: 'org.yaml', name: 'snakeyaml', version: '1.17'
+    compile group: 'org.apache.logging.log4j', name: 'log4j-core', version: '2.8'
     compile files('./libs/JavaPirateBayApi.jar')
 
     testCompile group: 'junit', name: 'junit', version: '4.11'
@@ -42,6 +44,14 @@ run {
 
 }
 
-artifacts {
-    oneJar
+task fatJar(type: Jar) {
+	manifest {
+        attributes 'Implementation-Version': version,
+        	'Main-Class': mainClassName
+    }
+    baseName = project.name + '-all'
+
+    from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
+    with jar
 }
+

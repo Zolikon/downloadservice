@@ -49,7 +49,10 @@ public class SeriesInformationClient {
         JsonNode callResult = callEndpoint(request);
         Optional<Episode> result = Optional.empty();
         if(callResult!=null){
-            result=Optional.of(mapper.convertValue(callResult,Episode.class));
+            Episode value = mapper.convertValue(callResult, Episode.class);
+            if (value.getAirdate()!=null){
+                result=Optional.of(value);
+            }
         }
         return result;
     }
